@@ -33,4 +33,3 @@ app.get('/api', async (req, res) => {
 });
 
 app.listen(PORT, () => console.log("Proxy online"));
-server.js

@@ -5,7 +5,12 @@ import fetch from "node-fetch";
 const app = express();
 app.use(cors());
 
-// --------- ENDPOINT CORRECTO ---------
+// Ruta raíz para evitar que Render devuelva HTML
+app.get("/", (req, res) => {
+  res.json({ status: "ok", msg: "Proxy operativo" });
+});
+
+// ENDPOINT CORRECTO DEL PROXY
 app.get("/api", async (req, res) => {
   try {
     const targetURL = req.query.url;
@@ -15,12 +20,12 @@ app.get("/api", async (req, res) => {
 
     const response = await fetch(targetURL);
 
-    // si la API devuelve HTML o error → mostrar mensaje claro
+    // Validación de contenido JSON real
     const contentType = response.headers.get("content-type") || "";
     if (!contentType.includes("application/json")) {
       const text = await response.text();
-      return res.status(500).json({
-        error: "La API no devolvió JSON",
+      return res.status(502).json({
+        error: "La API remota NO devolvió JSON",
         detalle: text.substring(0, 200)
       });
     }
@@ -29,12 +34,12 @@ app.get("/api", async (req, res) => {
     res.json(data);
 
   } catch (err) {
-    res.status(500).json({ error: "Error en el proxy", detalle: err.message });
+    res.status(500).json({ error: "Error interno del proxy", detalle: err.message });
   }
 });
 
-// Render usa este puerto:
+// Puerto obligatorio para Render
 const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log("Proxy server running on port " + PORT);
+  console.log("Servidor proxy activo en puerto " + PORT);
 });

@@ -1,35 +1,33 @@
 import express from "express";
 import fetch from "node-fetch";
+import cors from "cors";
 
 const app = express();
 const PORT = process.env.PORT || 3000;
 
-app.use((req, res, next) => {
-  res.header("Access-Control-Allow-Origin", "*");
-  next();
-});
+app.use(cors());
 
-app.get('/api', async (req, res) => {
-  const target = req.query.url;
+app.get("/proxy", async (req, res) => {
+  const url = req.query.url;
 
-  if (!target) {
+  if (!url) {
     return res.status(400).json({ error: "Missing url parameter" });
   }
 
   try {
-    const response = await fetch(target);
-    const text = await response.text();
+    const response = await fetch(url);
+    const data = await response.json();
 
-    try {
-      const json = JSON.parse(text);
-      res.json(json);
-    } catch {
-      res.send(text);
-    }
+    res.json(data);
   } catch (error) {
-    console.error(error);
-    res.status(500).json({ error: error.toString() });
+    res.status(500).json({ error: "Failed to fetch data", details: error.toString() });
   }
 });
 
-app.listen(PORT, () => console.log("Proxy online"));
+app.get("/", (req, res) => {
+  res.send("Proxy server running");
+});
+
+app.listen(PORT, () => {
+  console.log(`Proxy running on port ${PORT}`);
+});

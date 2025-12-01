@@ -1,33 +1,40 @@
 import express from "express";
-import fetch from "node-fetch";
 import cors from "cors";
+import fetch from "node-fetch";
 
 const app = express();
-const PORT = process.env.PORT || 3000;
-
 app.use(cors());
 
-app.get("/proxy", async (req, res) => {
-  const url = req.query.url;
-
-  if (!url) {
-    return res.status(400).json({ error: "Missing url parameter" });
-  }
-
+// --------- ENDPOINT CORRECTO ---------
+app.get("/api", async (req, res) => {
   try {
-    const response = await fetch(url);
-    const data = await response.json();
+    const targetURL = req.query.url;
+    if (!targetURL) {
+      return res.status(400).json({ error: "Falta parámetro ?url=" });
+    }
 
+    const response = await fetch(targetURL);
+
+    // si la API devuelve HTML o error → mostrar mensaje claro
+    const contentType = response.headers.get("content-type") || "";
+    if (!contentType.includes("application/json")) {
+      const text = await response.text();
+      return res.status(500).json({
+        error: "La API no devolvió JSON",
+        detalle: text.substring(0, 200)
+      });
+    }
+
+    const data = await response.json();
     res.json(data);
-  } catch (error) {
-    res.status(500).json({ error: "Failed to fetch data", details: error.toString() });
+
+  } catch (err) {
+    res.status(500).json({ error: "Error en el proxy", detalle: err.message });
   }
 });
 
-app.get("/", (req, res) => {
-  res.send("Proxy server running");
-});
-
+// Render usa este puerto:
+const PORT = process.env.PORT || 10000;
 app.listen(PORT, () => {
-  console.log(`Proxy running on port ${PORT}`);
+  console.log("Proxy server running on port " + PORT);
 });
